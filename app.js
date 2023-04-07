@@ -22,7 +22,10 @@ app.post('/sendgrid-webhook', async (req, res) => {
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
   } catch (error) {
-    console.error(error);
+    console.error('Error:', error);
+    if (error.response) {
+      console.error('Error response body:', error.response.body);
+    }
     res.status(500).send('Error forwarding email');
   }
 });
