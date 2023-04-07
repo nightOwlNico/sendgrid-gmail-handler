@@ -36,6 +36,8 @@ app.post('/sendgrid-webhook', async (req, res) => {
       attachments: convertedAttachments,
     };
 
+    console.log('Sending message:', msg);
+
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
   } catch (error) {
