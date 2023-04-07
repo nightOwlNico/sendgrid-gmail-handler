@@ -11,12 +11,29 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
   try {
-    const { to, from, subject, text } = req.body;
+    const { to, from, subject, text, html, attachments } = req.body;
+
+    // Convert attachments if they exist and are an array
+    const convertedAttachments =
+      attachments && Array.isArray(attachments)
+        ? attachments.map((attachment) => {
+            const { filename, content, contentType } = attachment;
+            return {
+              filename,
+              content: Buffer.from(content, 'base64'),
+              contentType,
+            };
+          })
+        : [];
+
     const msg = {
       to: 'nightOwlNico@gmail.com',
-      from: from.email,
+      from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
+      replyTo: from.email, // Set the 'reply-to' field to the original sender's email address
       subject: `Forwarded: ${subject}`,
       text: `Original sender: ${from.email}\n\n${text}`,
+      html: `Original sender: ${from.email}<br/><br/>${html}`,
+      attachments: convertedAttachments,
     };
 
     await sgMail.send(msg);
