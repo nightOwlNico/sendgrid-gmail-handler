@@ -14,6 +14,16 @@ app.post('/sendgrid-webhook', async (req, res) => {
   try {
     const { from, subject, text, html, attachments } = req.body;
 
+    if (!from || !from.address) {
+      res.status(400).send('Invalid payload: missing "from" or "from.address"');
+      return;
+    }
+
+    if (!text && !html) {
+      res.status(400).send('Invalid payload: missing both "text" and "html"');
+      return;
+    }
+
     // Convert attachments if they exist and are an array
     const convertedAttachments =
       attachments && Array.isArray(attachments)
