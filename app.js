@@ -1,19 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
-//const bodyParser = require('body-parser');
 const sgMail = require('@sendgrid/mail');
 
 const app = express();
 const port = process.env.PORT || 3000;
 const upload = multer();
 app.use(upload.any());
-//app.use(bodyParser.json());
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
   console.log(req.body);
+
   try {
     const { from, subject, text, html, attachments } = req.body;
 
@@ -67,7 +66,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.attachments = convertedAttachments;
     }
 
-    console.log('Sending message:', msg);
+    //console.log('Sending message:', msg);
 
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
