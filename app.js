@@ -29,7 +29,6 @@ app.post('/sendgrid-webhook', async (req, res) => {
     const msg = {
       to: 'nightOwlNico@gmail.com',
       from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
-      replyTo: from.email, // Set the 'reply-to' field to the original sender's email address
       subject: `Forwarded: ${subject}`,
       text: `Original sender: ${from.email}\n\n${text}`,
       html: `Original sender: ${from.email}<br/><br/>${html}`,
