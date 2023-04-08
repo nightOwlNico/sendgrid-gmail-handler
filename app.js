@@ -31,11 +31,11 @@ app.post('/sendgrid-webhook', async (req, res) => {
     const convertedAttachments =
       attachments && Array.isArray(attachments)
         ? attachments.map((attachment) => {
-            const { filename, content, contentType } = attachment;
+            const { originalname, buffer, mimetype } = attachment;
             return {
-              filename,
-              content: Buffer.from(content, 'base64'),
-              contentType,
+              filename: originalname,
+              content: buffer.toString('base64'),
+              contentType: mimetype,
             };
           })
         : [];
