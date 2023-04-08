@@ -36,16 +36,18 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.replyTo = from.address; // Set the 'reply-to' field to the original sender's email address
     }
 
-    if (subject) {
-      msg.subject = `Forwarded: ${subject}`;
-    }
+    msg.subject = subject ? `Forwarded: ${subject}` : 'Forwarded email';
 
     if (text) {
       msg.text = `Original sender: ${from.address}\n\n${text}`;
+    } else {
+      msg.text = `Original sender: ${from.address}\n\nNo text content provided.`;
     }
 
     if (html) {
       msg.html = `Original sender: ${from.address}<br/><br/>${html}`;
+    } else {
+      msg.html = `Original sender: ${from.address}<br/><br/>No HTML content provided.`;
     }
 
     if (convertedAttachments.length > 0) {
