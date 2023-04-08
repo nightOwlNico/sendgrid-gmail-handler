@@ -10,6 +10,7 @@ app.use(bodyParser.json());
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
+  console.log(req.body);
   try {
     const { to, from, subject, text, html, attachments } = req.body;
 
