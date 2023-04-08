@@ -12,7 +12,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 app.post('/sendgrid-webhook', async (req, res) => {
   console.log(req.body);
   try {
-    const { to, from, subject, text, html, attachments } = req.body;
+    const { from, subject, text, html, attachments } = req.body;
 
     // Convert attachments if they exist and are an array
     const convertedAttachments =
@@ -30,12 +30,27 @@ app.post('/sendgrid-webhook', async (req, res) => {
     const msg = {
       to: 'nightOwlNico@gmail.com',
       from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
-      replyTo: from.address, // Set the 'reply-to' field to the original sender's email address
-      subject: `Forwarded: ${subject}`,
-      text: `Original sender: ${from.address}\n\n${text}`,
-      html: `Original sender: ${from.address}<br/><br/>${html}`,
-      attachments: convertedAttachments,
     };
+
+    if (from && from.address) {
+      msg.replyTo = from.address; // Set the 'reply-to' field to the original sender's email address
+    }
+
+    if (subject) {
+      msg.subject = `Forwarded: ${subject}`;
+    }
+
+    if (text) {
+      msg.text = `Original sender: ${from.address}\n\n${text}`;
+    }
+
+    if (html) {
+      msg.html = `Original sender: ${from.address}<br/><br/>${html}`;
+    }
+
+    if (convertedAttachments.length > 0) {
+      msg.attachments = convertedAttachments;
+    }
 
     console.log('Sending message:', msg);
 
