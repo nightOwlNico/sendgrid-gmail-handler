@@ -16,16 +16,6 @@ app.post('/sendgrid-webhook', async (req, res) => {
   try {
     const { from, subject, text, html, attachments } = req.body;
 
-    if (!from || !from.address) {
-      res.status(400).send('Invalid payload: missing "from" or "from.address"');
-      return;
-    }
-
-    if (!text && !html) {
-      res.status(400).send('Invalid payload: missing both "text" and "html"');
-      return;
-    }
-
     // Convert attachments if they exist and are an array
     const convertedAttachments =
       attachments && Array.isArray(attachments)
@@ -50,16 +40,16 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
     msg.subject = subject ? `Forwarded: ${subject}` : 'Forwarded email';
 
-    if (text) {
-      msg.text = `Original sender: ${from.address}\n\n${text}`;
-    } else {
+    if (!text) {
       msg.text = `Original sender: ${from.address}\n\nNo text content provided.`;
+    } else {
+      msg.text = `Original sender: ${from.address}\n\n${text}`;
     }
 
-    if (html) {
-      msg.html = `Original sender: ${from.address}<br/><br/>${html}`;
-    } else {
+    if (!html) {
       msg.html = `Original sender: ${from.address}<br/><br/>No HTML content provided.`;
+    } else {
+      msg.html = `Original sender: ${from.address}<br/><br/>${html}`;
     }
 
     if (convertedAttachments.length > 0) {
