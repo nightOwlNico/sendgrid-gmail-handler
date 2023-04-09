@@ -25,7 +25,11 @@ app.post('/sendgrid-webhook', async (req, res) => {
           (file) => file.fieldname === attachmentField
         );
 
-        if (attachmentFile) {
+        if (
+          attachmentFile &&
+          attachmentInfoObj[attachmentField] &&
+          attachmentInfoObj[attachmentField]['content-id']
+        ) {
           receivedAttachments.push({
             contentId: attachmentInfoObj[attachmentField]['content-id'],
             contentType: attachmentFile.mimetype,
