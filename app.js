@@ -16,20 +16,19 @@ app.post('/sendgrid-webhook', async (req, res) => {
   try {
     const { text, html, from, attachments, subject } = req.body;
 
-    // Convert attachments if they exist and are an array
-    const convertedAttachments =
-      req.files && Array.isArray(req.files)
-        ? req.files.map((file) => {
-            const { originalname, buffer, mimetype } = file;
+    const convertedAttachments = attachments.map((attachment) => {
+      const { filename, content, contentType } = attachment;
+      const contentId = filename.replace(/\s/g, '').replace(/[^\w.-]+/g, '');
 
-            return {
-              filename: originalname,
-              content: buffer.toString('base64'),
-              contentType: mimetype,
-              // Remove the contentId and disposition properties
-            };
-          })
-        : [];
+      return {
+        filename,
+        content: content.toString('base64'),
+        contentType,
+        contentId,
+        disposition: 'inline',
+        headers: { 'Content-ID': `<${contentId}>` },
+      };
+    });
 
     const msg = {
       to: 'nightOwlNico@gmail.com',
@@ -48,10 +47,9 @@ app.post('/sendgrid-webhook', async (req, res) => {
       let updatedHtml = html;
       // Update CID references in the HTML body
       convertedAttachments.forEach((attachment) => {
-        const { filename, content, contentType } = attachment;
-        const dataUrl = `data:${contentType};base64,${content}`;
+        const { filename, contentId } = attachment;
         const cidRegex = new RegExp(`cid:${filename}`, 'g');
-        updatedHtml = updatedHtml.replace(cidRegex, dataUrl);
+        updatedHtml = updatedHtml.replace(cidRegex, `cid:${contentId}`);
       });
       msg.html = `Original sender: ${from.address}<br/><br/>${updatedHtml}`;
     }
