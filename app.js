@@ -45,7 +45,15 @@ app.post('/sendgrid-webhook', async (req, res) => {
     }
 
     if (html) {
-      msg.html = html;
+      let updatedHtml = html;
+      // Update CID references in the HTML body
+      convertedAttachments.forEach((attachment) => {
+        const { filename, content, contentType } = attachment;
+        const dataUrl = `data:${contentType};base64,${content}`;
+        const cidRegex = new RegExp(`cid:${filename}`, 'g');
+        updatedHtml = updatedHtml.replace(cidRegex, dataUrl);
+      });
+      msg.html = `Original sender: ${from.address}<br/><br/>${updatedHtml}`;
     }
 
     if (convertedAttachments.length > 0) {
