@@ -14,6 +14,10 @@ const upload = multer({ storage: storage });
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+const convertToBase64 = (buffer) => {
+  return buffer.toString('base64');
+};
+
 // ----------
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   // console.log('req.body', req.body);
@@ -27,27 +31,28 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     const contentIdsMapping = JSON.parse(req.body['content-ids']);
 
     let attachments = [];
+    let embeddedImages = [];
     for (let i = 1; i <= numAttachments; i++) {
       const attachment = req.files.find(
         (file) => file.fieldname === `attachment${i}`
       );
       const info = attachmentInfo[`attachment${i}`];
 
-      let contentId = undefined;
-      // Find the content-id corresponding to the current attachment
-      for (const [key, value] of Object.entries(contentIdsMapping)) {
-        if (value === `attachment${i}`) {
-          contentId = key;
-          break;
-        }
-      }
-
-      attachments.push({
-        content: attachment.buffer.toString('base64'),
+      const attachmentData = {
+        content: convertToBase64(attachment.buffer),
         filename: info.filename,
         contentType: info.type,
-        contentId: contentId,
-      });
+        contentId: info['content-id'] || undefined,
+      };
+
+      if (info.type.startsWith('image/')) {
+        attachmentData.contentId = info['content-id'] || `inlineImage${i}`;
+        embeddedImages.push(
+          `<img src="cid:${attachmentData.contentId}" alt="${info.filename}" />`
+        );
+      }
+
+      attachments.push(attachmentData);
     }
 
     const msg = {
@@ -63,12 +68,12 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       msg.subject = subject;
     }
 
-    if (text) {
+    if (text && !html) {
       msg.text = text;
     }
 
     if (html) {
-      msg.html = html;
+      msg.html = html + embeddedImages.join('\n');
     }
 
     if (attachments) {
