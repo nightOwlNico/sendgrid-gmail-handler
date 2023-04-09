@@ -21,17 +21,12 @@ app.post('/sendgrid-webhook', async (req, res) => {
       req.files && Array.isArray(req.files)
         ? req.files.map((file) => {
             const { originalname, buffer, mimetype } = file;
-            const contentId = `attachment_${file.fieldname.replace(
-              'attachment',
-              ''
-            )}`;
 
             return {
               filename: originalname,
               content: buffer.toString('base64'),
               contentType: mimetype,
-              contentId, // Update the contentId property
-              disposition: 'inline', // Set the disposition to 'inline' for displaying inline images
+              // Remove the contentId and disposition properties
             };
           })
         : [];
@@ -50,17 +45,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
     }
 
     if (html) {
-      let updatedHtml = html;
-      // Update CID references in the HTML body
-      convertedAttachments.forEach((attachment) => {
-        const { contentId } = attachment;
-        const cidRegex = new RegExp(`cid:${contentId}`, 'g');
-        updatedHtml = updatedHtml.replace(
-          cidRegex,
-          `cid:${attachment.contentId}`
-        );
-      });
-      msg.html = `Original sender: ${from.address}<br/><br/>${updatedHtml}`;
+      msg.html = html;
     }
 
     if (convertedAttachments.length > 0) {
