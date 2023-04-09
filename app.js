@@ -17,6 +17,19 @@ app.post('/sendgrid-webhook', async (req, res) => {
     // ==========
     const { to, text, html, from, envelope, attachments, subject } = req.body;
 
+    // Convert attachments if they exist and are an array
+    const convertedAttachments =
+      attachments && Array.isArray(attachments)
+        ? attachments.map((attachment) => {
+            const { originalname, buffer, mimetype } = attachment;
+            return {
+              filename: originalname,
+              content: buffer.toString('base64'),
+              contentType: mimetype,
+            };
+          })
+        : [];
+
     const msg = {
       to: 'nightOwlNico@gmail.com',
       from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
@@ -42,8 +55,8 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.envelope = envelope;
     }
 
-    if (attachments) {
-      msg.attachments = attachments;
+    if (convertedAttachments.length > 0) {
+      msg.attachments = convertedAttachments;
     }
 
     if (subject) {
