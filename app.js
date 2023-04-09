@@ -30,8 +30,12 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
     const msg = {
       to: 'nightOwlNico@gmail.com',
-      from: from,
+      from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
     };
+
+    if (from) {
+      msg.replyTo = from; // Set the 'reply-to' field to the original sender's email address
+    }
 
     if (to) {
       msg.REALtoFIELD = to;
