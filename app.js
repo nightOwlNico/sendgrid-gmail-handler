@@ -73,7 +73,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
         const cidRegex = new RegExp(`cid:${contentId}`, 'g');
         updatedHtml = updatedHtml.replace(cidRegex, `cid:${contentId}`);
       });
-      msg.html = html;
+      msg.html = updatedHtml;
     }
 
     if (convertedAttachments.length > 0) {
