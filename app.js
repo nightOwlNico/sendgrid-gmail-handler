@@ -11,6 +11,7 @@ app.use(upload.any());
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
+  // console.log('req.body', req.body);
   try {
     const { text, html, from, attachments, subject } = req.body;
 
