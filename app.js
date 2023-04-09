@@ -25,7 +25,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
               filename: originalname,
               content: buffer.toString('base64'),
               contentType: mimetype,
-              contentId: file.fieldname, // Add the contentId property from the file
+              contentId: file.fieldname.replace('attachment', ''), // Update the contentId property
             };
           })
         : [];
