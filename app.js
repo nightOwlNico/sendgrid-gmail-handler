@@ -21,13 +21,16 @@ app.post('/sendgrid-webhook', async (req, res) => {
       req.files && Array.isArray(req.files)
         ? req.files.map((file) => {
             const { originalname, buffer, mimetype } = file;
-            const contentId = file.fieldname.replace('attachment', '');
+            const contentId = `attachment_${file.fieldname.replace(
+              'attachment',
+              ''
+            )}`;
 
             return {
               filename: originalname,
               content: buffer.toString('base64'),
               contentType: mimetype,
-              contentId: `attachment_${contentId}`, // Update the contentId property
+              contentId, // Update the contentId property
               disposition: 'inline', // Set the disposition to 'inline' for displaying inline images
             };
           })
