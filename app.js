@@ -17,9 +17,9 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
     // Convert attachments if they exist and are an array
     const convertedAttachments =
-      attachments && Array.isArray(attachments)
-        ? attachments.map((attachment) => {
-            const { originalname, buffer, mimetype } = attachment;
+      req.files && Array.isArray(req.files)
+        ? req.files.map((file) => {
+            const { originalname, buffer, mimetype } = file;
             return {
               filename: originalname,
               content: buffer.toString('base64'),
