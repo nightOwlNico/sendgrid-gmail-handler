@@ -12,8 +12,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
   try {
-    // ==========
-    const { to, text, html, from, envelope, attachments, subject } = req.body;
+    const { text, html, from, attachments, subject } = req.body;
 
     // Convert attachments if they exist and are an array
     const convertedAttachments =
@@ -30,15 +29,11 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
     const msg = {
       to: 'nightOwlNico@gmail.com',
-      from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
+      from: 'email-forwarding-handler@NightOwlNico.com', // Use the verified 'from' address
     };
 
     if (from) {
       msg.replyTo = from; // Set the 'reply-to' field to the original sender's email address
-    }
-
-    if (to) {
-      msg.REALtoFIELD = to;
     }
 
     if (text) {
@@ -49,14 +44,6 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.html = html;
     }
 
-    if (from) {
-      msg.REALfromFIELD = from;
-    }
-
-    if (envelope) {
-      msg.envelope = envelope;
-    }
-
     if (convertedAttachments.length > 0) {
       msg.attachments = convertedAttachments;
     }
@@ -65,50 +52,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.subject = subject;
     }
 
-    // ==========
-    // const { from, subject, text, html, attachments } = req.body;
-
-    // Convert attachments if they exist and are an array
-    // const convertedAttachments =
-    //   attachments && Array.isArray(attachments)
-    //     ? attachments.map((attachment) => {
-    //         const { originalname, buffer, mimetype } = attachment;
-    //         return {
-    //           filename: originalname,
-    //           content: buffer.toString('base64'),
-    //           contentType: mimetype,
-    //         };
-    //       })
-    //     : [];
-
-    // const msg = {
-    //   to: 'nightOwlNico@gmail.com',
-    //   from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
-    // };
-
-    // if (from && from.address) {
-    //   msg.replyTo = from.address; // Set the 'reply-to' field to the original sender's email address
-    // }
-
-    // msg.subject = subject ? `Forwarded: ${subject}` : 'Forwarded email';
-
-    // if (!text) {
-    //   msg.text = `Original sender: ${from.address}\n\nNo text content provided.`;
-    // } else {
-    //   msg.text = `Original sender: ${from.address}\n\n${text}`;
-    // }
-
-    // if (!html) {
-    //   msg.html = `Original sender: ${from.address}<br/><br/>No HTML content provided.`;
-    // } else {
-    //   msg.html = `Original sender: ${from.address}<br/><br/>${html}`;
-    // }
-
-    // if (convertedAttachments.length > 0) {
-    //   msg.attachments = convertedAttachments;
-    // }
-
-    console.log('Sending message:', msg);
+    // console.log('Sending message:', msg);
 
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
