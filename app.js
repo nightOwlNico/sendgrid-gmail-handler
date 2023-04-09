@@ -11,8 +11,6 @@ app.use(upload.any());
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
-  // console.log(req.body);
-
   try {
     // ==========
     const { to, text, html, from, envelope, attachments, subject } = req.body;
@@ -32,7 +30,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
     const msg = {
       to: 'nightOwlNico@gmail.com',
-      from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
+      from: from,
     };
 
     if (to) {
