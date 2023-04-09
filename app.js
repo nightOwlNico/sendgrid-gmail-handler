@@ -14,15 +14,34 @@ app.post('/sendgrid-webhook', async (req, res) => {
   // console.log('req.body', req.body);
 
   try {
-    const { text, html, from, attachments, subject } = req.body;
+    const { text, html, from, subject, attachments, attachmentInfo } = req.body;
+    const attachmentInfoObj = JSON.parse(attachmentInfo || '{}');
+    const receivedAttachments = [];
 
-    const convertedAttachments = attachments.map((attachment) => {
-      const { filename, content, contentType } = attachment;
-      const contentId = filename.replace(/\s/g, '').replace(/[^\w.-]+/g, '');
+    if (attachments) {
+      for (let i = 1; i <= parseInt(attachments, 10); i++) {
+        const attachmentField = `attachment${i}`;
+        const attachmentFile = req.files.find(
+          (file) => file.fieldname === attachmentField
+        );
+
+        if (attachmentFile) {
+          receivedAttachments.push({
+            contentId: attachmentInfoObj[attachmentField]['content-id'],
+            contentType: attachmentFile.mimetype,
+            filename: attachmentFile.originalname,
+            content: attachmentFile.buffer.toString('base64'),
+          });
+        }
+      }
+    }
+
+    const convertedAttachments = receivedAttachments.map((attachment) => {
+      const { filename, content, contentType, contentId } = attachment;
 
       return {
         filename,
-        content: content.toString('base64'),
+        content,
         contentType,
         contentId,
         disposition: 'inline',
@@ -32,7 +51,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
     const msg = {
       to: 'nightOwlNico@gmail.com',
-      from: 'email-forwarding-handler@NightOwlNico.com', // Use the verified 'from' address
+      from: 'email-forwarding-handler@NightOwlNico.com',
     };
 
     if (from) {
@@ -45,13 +64,12 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
     if (html) {
       let updatedHtml = html;
-      // Update CID references in the HTML body
       convertedAttachments.forEach((attachment) => {
-        const { filename, contentId } = attachment;
-        const cidRegex = new RegExp(`cid:${filename}`, 'g');
+        const { contentId } = attachment;
+        const cidRegex = new RegExp(`cid:${contentId}`, 'g');
         updatedHtml = updatedHtml.replace(cidRegex, `cid:${contentId}`);
       });
-      msg.html = `Original sender: ${from.address}<br/><br/>${updatedHtml}`;
+      msg.html = html;
     }
 
     if (convertedAttachments.length > 0) {
