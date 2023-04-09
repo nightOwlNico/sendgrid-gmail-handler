@@ -23,17 +23,30 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     const numAttachments = parseInt(req.body.attachments, 10);
     const attachmentInfo = JSON.parse(req.body['attachment-info']);
 
+    // Extract content-ids mapping
+    const contentIdsMapping = JSON.parse(req.body['content-ids']);
+
     let attachments = [];
     for (let i = 1; i <= numAttachments; i++) {
       const attachment = req.files.find(
         (file) => file.fieldname === `attachment${i}`
       );
       const info = attachmentInfo[`attachment${i}`];
+
+      let contentId = undefined;
+      // Find the content-id corresponding to the current attachment
+      for (const [key, value] of Object.entries(contentIdsMapping)) {
+        if (value === `attachment${i}`) {
+          contentId = key;
+          break;
+        }
+      }
+
       attachments.push({
         content: attachment.buffer.toString('base64'),
         filename: info.filename,
         contentType: info.type,
-        contentId: info.cid || undefined,
+        contentId: contentId,
       });
     }
 
