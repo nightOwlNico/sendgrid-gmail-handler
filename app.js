@@ -15,43 +15,12 @@ app.post('/sendgrid-webhook', async (req, res) => {
 
   try {
     // ==========
-    const {
-      headers,
-      dkim,
-      contentIds,
-      to,
-      text,
-      html,
-      from,
-      senderIp,
-      spamReport,
-      envelope,
-      attachments,
-      subject,
-      spamScore,
-      attachmentInfo,
-      charsets,
-      SPF,
-    } = req.body;
+    const { to, text, html, from, envelope, attachments, subject } = req.body;
 
     const msg = {
       to: 'nightOwlNico@gmail.com',
       from: 'Nico@NightOwlNico.com', // Use the verified 'from' address
-      REALtoFIELD: '',
-      REALfromFIELD: '',
     };
-
-    if (headers) {
-      msg.headers = headers;
-    }
-
-    if (dkim) {
-      msg.dkim = dkim;
-    }
-
-    if (contentIds) {
-      msg.contentIds = contentIds;
-    }
 
     if (to) {
       msg.REALtoFIELD = to;
@@ -69,14 +38,6 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.REALfromFIELD = from;
     }
 
-    if (senderIp) {
-      msg.senderIp = senderIp;
-    }
-
-    if (spamReport) {
-      msg.spamReport = spamReport;
-    }
-
     if (envelope) {
       msg.envelope = envelope;
     }
@@ -89,21 +50,6 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.subject = subject;
     }
 
-    if (spamScore) {
-      msg.spamScore = spamScore;
-    }
-
-    if (attachmentInfo) {
-      msg.attachmentInfo = attachmentInfo;
-    }
-
-    if (charsets) {
-      msg.charsets = charsets;
-    }
-
-    if (SPF) {
-      msg.SPF = SPF;
-    }
     // ==========
     // const { from, subject, text, html, attachments } = req.body;
 
