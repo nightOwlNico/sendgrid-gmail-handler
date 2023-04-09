@@ -11,7 +11,7 @@ app.use(upload.any());
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
 
   try {
     // ==========
@@ -106,7 +106,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
     //   msg.attachments = convertedAttachments;
     // }
 
-    //console.log('Sending message:', msg);
+    console.log('Sending message:', msg);
 
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
