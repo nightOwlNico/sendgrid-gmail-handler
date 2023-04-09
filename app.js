@@ -12,6 +12,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', async (req, res) => {
   // console.log('req.body', req.body);
+
   try {
     const { text, html, from, attachments, subject } = req.body;
 
@@ -24,6 +25,7 @@ app.post('/sendgrid-webhook', async (req, res) => {
               filename: originalname,
               content: buffer.toString('base64'),
               contentType: mimetype,
+              contentId: file.fieldname, // Add the contentId property from the file
             };
           })
         : [];
@@ -37,12 +39,22 @@ app.post('/sendgrid-webhook', async (req, res) => {
       msg.replyTo = from; // Set the 'reply-to' field to the original sender's email address
     }
 
-    if (text) {
+    if (text && !html) {
       msg.text = text;
     }
 
     if (html) {
-      msg.html = html;
+      let updatedHtml = html;
+      // Update CID references in the HTML body
+      convertedAttachments.forEach((attachment) => {
+        const { contentId } = attachment;
+        const cidRegex = new RegExp(`cid:${contentId}`, 'g');
+        updatedHtml = updatedHtml.replace(
+          cidRegex,
+          `cid:${attachment.filename}`
+        );
+      });
+      msg.html = `Original sender: ${from.address}<br/><br/>${updatedHtml}`;
     }
 
     if (convertedAttachments.length > 0) {
