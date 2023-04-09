@@ -33,7 +33,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
         content: attachment.buffer.toString('base64'),
         filename: info.filename,
         contentType: info.type,
-        contentId: info['content-id'] || undefined,
+        contentId: info.cid || undefined,
       });
     }
 
