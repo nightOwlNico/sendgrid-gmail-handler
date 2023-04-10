@@ -47,8 +47,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
         disposition: disposition,
       };
 
-      // Only include contentId if the disposition is 'inline'
-      if (disposition === 'inline') {
+      if (contentId) {
         attachment.contentId = contentId;
       }
 
