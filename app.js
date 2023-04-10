@@ -2,14 +2,11 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const sgMail = require('@sendgrid/mail');
-
 const app = express();
 const port = process.env.PORT || 3000;
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   // console.log('req.body', req.body);
 
@@ -27,50 +24,16 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     }
 
     // Parse the attachment-info JSON string
-    let parsedAttachmentInfo = {};
-
-    try {
-      parsedAttachmentInfo = JSON.parse(attachmentInfo);
-    } catch (error) {
-      console.error('Error parsing attachmentInfo:', error);
-      return res.status(400).send('Invalid or missing attachmentInfo');
-    }
+    const parsedAttachmentInfo = JSON.parse(attachmentInfo);
 
     // Create an array of attachments with the required format
-    const attachments = req.files.map((file) => {
-      const fileInfo = parsedAttachmentInfo[file.fieldname];
-      const contentId = fileInfo['content-id'];
-
-      // Set disposition to 'inline' if the file is an image and contentId is present
-      let disposition;
-      if (file.mimetype.startsWith('image/')) {
-        if (contentId) {
-          disposition = 'inline';
-        } else {
-          disposition = fileInfo['disposition'];
-          console.warn(
-            'Warning: An inline image is missing contentId. Setting disposition to:',
-            disposition
-          );
-        }
-      } else {
-        disposition = fileInfo['disposition'];
-      }
-
-      const attachment = {
-        content: file.buffer.toString('base64'),
-        filename: file.originalname,
-        type: file.mimetype,
-        disposition: disposition,
-        contentId: contentId || undefined,
-      };
-
-      if (contentId) {
-        attachment.contentId = contentId;
-      }
-
-      return attachment;
-    });
+    const attachments = req.files.map((file) => ({
+      content: file.buffer.toString('base64'),
+      filename: file.originalname,
+      type: file.mimetype,
+      disposition: 'attachment',
+      contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
+    }));
 
     const msg = {
       to: process.env.TO_EMAIL,
