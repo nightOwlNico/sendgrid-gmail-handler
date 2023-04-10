@@ -30,13 +30,17 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     const parsedAttachmentInfo = JSON.parse(attachmentInfo);
 
     // Create an array of attachments with the required format
-    const attachments = req.files.map((file) => ({
-      content: file.buffer.toString('base64'),
-      filename: file.originalname,
-      type: file.mimetype,
-      disposition: 'attachment',
-      contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
-    }));
+    const attachments = req.files.map((file) => {
+      const disposition = parsedAttachmentInfo[file.fieldname]['disposition'];
+
+      return {
+        content: file.buffer.toString('base64'),
+        filename: file.originalname,
+        type: file.mimetype,
+        disposition: disposition,
+        contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
+      };
+    });
 
     const msg = {
       to: process.env.TO_EMAIL,
