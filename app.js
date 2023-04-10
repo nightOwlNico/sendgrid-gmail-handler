@@ -40,13 +40,19 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
         disposition = 'inline';
       }
 
-      return {
+      const attachment = {
         content: file.buffer.toString('base64'),
         filename: file.originalname,
         type: file.mimetype,
         disposition: disposition,
-        contentId: contentId,
       };
+
+      // Only include contentId if the disposition is 'inline'
+      if (disposition === 'inline') {
+        attachment.contentId = contentId;
+      }
+
+      return attachment;
     });
 
     const msg = {
