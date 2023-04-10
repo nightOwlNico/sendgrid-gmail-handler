@@ -35,8 +35,8 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       let disposition = fileInfo['disposition'];
       const contentId = fileInfo['content-id'];
 
-      // Set disposition to 'inline' if the file is an image
-      if (file.mimetype.startsWith('image/')) {
+      // Set disposition to 'inline' if the file is an image and contentId is present
+      if (file.mimetype.startsWith('image/') && contentId) {
         disposition = 'inline';
       }
 
