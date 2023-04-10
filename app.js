@@ -27,7 +27,14 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     }
 
     // Parse the attachment-info JSON string
-    const parsedAttachmentInfo = JSON.parse(attachmentInfo);
+    let parsedAttachmentInfo = {};
+
+    try {
+      parsedAttachmentInfo = JSON.parse(attachmentInfo);
+    } catch (error) {
+      console.error('Error parsing attachmentInfo:', error);
+      return res.status(400).send('Invalid or missing attachmentInfo');
+    }
 
     // Create an array of attachments with the required format
     const attachments = req.files.map((file) => {
@@ -36,8 +43,16 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
 
       // Set disposition to 'inline' if the file is an image and contentId is present
       let disposition;
-      if (file.mimetype.startsWith('image/') && contentId) {
-        disposition = 'inline';
+      if (file.mimetype.startsWith('image/')) {
+        if (contentId) {
+          disposition = 'inline';
+        } else {
+          disposition = fileInfo['disposition'];
+          console.warn(
+            'Warning: An inline image is missing contentId. Setting disposition to:',
+            disposition
+          );
+        }
       } else {
         disposition = fileInfo['disposition'];
       }
