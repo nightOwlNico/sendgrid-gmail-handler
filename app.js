@@ -14,32 +14,39 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   // console.log('req.body', req.body);
 
   try {
-    const { from, subject, text, html } = req.body;
+    const {
+      from,
+      subject,
+      text,
+      html,
+      'attachment-info': attachmentInfo,
+    } = req.body;
+
+    if (!from) {
+      return res.status(400).send('Missing required field: from');
+    }
+
+    // Parse the attachment-info JSON string
+    const parsedAttachmentInfo = JSON.parse(attachmentInfo);
+
+    // Create an array of attachments with the required format
+    const attachments = req.files.map((file) => ({
+      content: file.buffer.toString('base64'),
+      filename: file.originalname,
+      type: file.mimetype,
+      disposition: 'attachment',
+      contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
+    }));
 
     const msg = {
-      to: 'nightOwlNico@gmail.com',
-      from: 'email-forwarding-handler@NightOwlNico.com',
+      to: process.env.TO_EMAIL,
+      from: process.env.FROM_EMAIL,
+      replyTo: from,
+      subject: subject,
+      text: text,
+      html: html,
+      attachments: attachments.length > 0 ? attachments : undefined,
     };
-
-    if (from) {
-      msg.replyTo = from; // Set the 'reply-to' field to the original sender's email address
-    }
-
-    if (subject) {
-      msg.subject = subject;
-    }
-
-    if (text) {
-      msg.text = text;
-    }
-
-    if (html) {
-      msg.html = html;
-    }
-
-    if (attachments) {
-      msg.attachments = attachments;
-    }
 
     // console.log('Sending message:', msg);
 
