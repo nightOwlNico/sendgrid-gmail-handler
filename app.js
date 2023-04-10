@@ -62,6 +62,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
         filename: file.originalname,
         type: file.mimetype,
         disposition: disposition,
+        contentId: contentId || undefined,
       };
 
       if (contentId) {
