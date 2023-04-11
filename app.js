@@ -2,11 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const sgMail = require('@sendgrid/mail');
+
 const app = express();
 const port = process.env.PORT || 3000;
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   // console.log('req.body', req.body);
 
