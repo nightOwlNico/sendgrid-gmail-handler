@@ -43,7 +43,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
 
     // Create an array of attachments with the required format
     const attachments = req.files.map((file, index) => {
-      const contentId = `image${index}`;
+      const contentId = `attachment${index}`;
       const isImage = file.mimetype.startsWith('image/');
       const htmlTag = isImage
         ? `<img src="cid:${contentId}" alt="Embedded image ${index + 1}" />`
@@ -54,7 +54,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
         filename: file.originalname,
         type: file.mimetype,
         disposition: isImage ? 'inline' : 'attachment',
-        contentId: isImage ? contentId : undefined,
+        contentId: contentId,
         cid: contentId,
         alt: isImage ? `Embedded image ${index + 1}` : undefined,
         htmlTag: htmlTag,
