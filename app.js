@@ -54,7 +54,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
         filename: file.originalname,
         type: file.mimetype,
         disposition: isImage ? 'inline' : 'attachment',
-        contentId: contentId,
+        contentId: isImage ? contentId : undefined,
         cid: contentId,
         alt: isImage ? `Embedded image ${index + 1}` : undefined,
         htmlTag: htmlTag,
@@ -88,7 +88,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     if (error.response) {
       console.error('Error response body:', error.response.body);
     }
-    res.status(500).send('Error forwarding email');
+    res.status(500).send(`Error forwarding email: ${error.message}`);
   }
 });
 
