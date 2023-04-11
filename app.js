@@ -49,16 +49,21 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
         ? `<img src="cid:${contentId}" alt="Embedded image ${index + 1}" />`
         : '';
 
-      return {
+      const attachmentObject = {
         content: file.buffer.toString('base64'),
         filename: file.originalname,
         type: file.mimetype,
         disposition: isImage ? 'inline' : 'attachment',
-        contentId: contentId,
         cid: contentId,
         alt: isImage ? `Embedded image ${index + 1}` : undefined,
         htmlTag: htmlTag,
       };
+
+      if (isImage) {
+        attachmentObject.content_id = contentId;
+      }
+
+      return attachmentObject;
     });
 
     let updatedHtml = parsedHtml;
