@@ -26,8 +26,20 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       return res.status(400).send('Missing required field: from');
     }
 
+    const parsedSubject = subject || 'No Subject';
+    const parsedText = text || '';
+    const parsedHtml = html || '';
+
     // Parse the attachment-info JSON string
-    const parsedAttachmentInfo = JSON.parse(attachmentInfo);
+    let parsedAttachmentInfo = {};
+
+    try {
+      parsedAttachmentInfo = attachmentInfo ? JSON.parse(attachmentInfo) : {};
+    } catch (error) {
+      console.error('Error parsing attachmentInfo:', error);
+      console.error('attachmentInfo:', attachmentInfo);
+      return res.status(400).send('Invalid attachmentInfo format');
+    }
 
     // Create an array of attachments with the required format
     const attachments = req.files.map((file) => ({
@@ -42,9 +54,9 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       to: process.env.TO_EMAIL,
       from: process.env.FROM_EMAIL,
       replyTo: from,
-      subject: subject,
-      text: text,
-      html: html,
+      subject: parsedSubject,
+      text: parsedText,
+      html: parsedHtml,
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
