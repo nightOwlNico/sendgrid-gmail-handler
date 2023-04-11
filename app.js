@@ -26,7 +26,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       return res.status(400).send('Missing required field: from');
     }
 
-    const parsedSubject = subject || 'No Subject';
+    const parsedSubject = from + ': ' + (subject || '(No Subject)');
     const parsedText = text || '';
     const parsedHtml = html || '';
 
@@ -42,13 +42,32 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     }
 
     // Create an array of attachments with the required format
-    const attachments = req.files.map((file) => ({
-      content: file.buffer.toString('base64'),
-      filename: file.originalname,
-      type: file.mimetype,
-      disposition: 'attachment',
-      contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
-    }));
+    const attachments = req.files.map((file, index) => {
+      const contentId = `image${index}`;
+      const isImage = file.mimetype.startsWith('image/');
+      const htmlTag = isImage
+        ? `<img src="cid:${contentId}" alt="Embedded image ${index + 1}" />`
+        : '';
+
+      return {
+        content: file.buffer.toString('base64'),
+        filename: file.originalname,
+        type: file.mimetype,
+        disposition: isImage ? 'inline' : 'attachment',
+        contentId: contentId,
+        cid: contentId,
+        alt: isImage ? `Embedded image ${index + 1}` : undefined,
+        htmlTag: htmlTag,
+      };
+    });
+
+    let updatedHtml = parsedHtml;
+    attachments.forEach((attachment) => {
+      if (attachment.htmlTag) {
+        const cidRegex = new RegExp(`cid:${attachment.cid}`, 'gi');
+        updatedHtml = updatedHtml.replace(cidRegex, attachment.htmlTag);
+      }
+    });
 
     const msg = {
       to: process.env.TO_EMAIL,
@@ -56,7 +75,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       replyTo: from,
       subject: parsedSubject,
       text: parsedText,
-      html: parsedHtml,
+      html: updatedHtml,
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
