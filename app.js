@@ -16,7 +16,7 @@ const rawPayloadUpload = multer({
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Extract and process data URI images
-function processDataUriImages(html) {
+function processDataUriImages(html, attachments) {
   const dataUriRegex =
     /<img[^>]*src="data:image\/(jpeg|jpg|png|gif|bmp|webp|tif|tiff|svg|ico|avif|heic|heif);base64,([^"]*)"[^>]*>/gi;
   let updatedHtml = html;
@@ -70,7 +70,7 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
     const parsedText = text || '';
     const parsedHtml = html || '';
 
-    const updatedHtml = processDataUriImages(parsedHtml);
+    const updatedHtml = processDataUriImages(parsedHtml, attachments);
     const msg = {
       to: process.env.TO_EMAIL,
       from: process.env.FROM_EMAIL,
