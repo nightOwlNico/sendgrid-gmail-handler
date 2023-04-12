@@ -52,10 +52,6 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
   // console.log('req.body', req.body);
 
   try {
-    if (!from) {
-      return res.status(400).send('Missing required field: from');
-    }
-
     let rawEmail = req.file ? req.file.buffer.toString('utf-8') : undefined;
     let parsedEmail = req.file ? await simpleParser(rawEmail) : undefined;
 
@@ -64,6 +60,10 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
     let text = req.file ? parsedEmail.text : req.body.text;
     let html = req.file ? parsedEmail.html : req.body.html;
     let attachments = req.file ? parsedEmail.attachments : req.body.attachments;
+
+    if (!from) {
+      return res.status(400).send('Missing required field: from');
+    }
 
     const parsedSubject =
       from.value[0].address + ': ' + (subject || '(No Subject)');
