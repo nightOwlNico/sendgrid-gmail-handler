@@ -3,11 +3,20 @@ const express = require('express');
 const multer = require('multer');
 const { simpleParser } = require('mailparser');
 const sgMail = require('@sendgrid/mail');
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-const rawPayloadStorage = multer.memoryStorage();
+const rawPayloadStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './uploads/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
 const rawPayloadUpload = multer({
   storage: rawPayloadStorage,
   limits: { fileSize: 50 * 1024 * 1024 }, // Set the size limit to 50 MB
@@ -52,11 +61,7 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
   // console.log('req.body', req.body);
 
   try {
-    if (!req.file) {
-      return res.status(400).send('Missing raw email payload');
-    }
-
-    const rawEmail = req.file.buffer.toString('utf-8');
+    const rawEmail = fs.readFileSync(req.file.path, 'utf-8');
     const parsedEmail = await simpleParser(rawEmail);
 
     const { from, subject, text, html, attachments } = parsedEmail;
@@ -84,13 +89,35 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
     // console.log('Sending message:', msg);
 
     await sgMail.send(msg);
-    res.status(200).send('Email forwarded successfully');
-  } catch (error) {
-    console.error('Error:', error);
-    if (error.response) {
-      console.error('Error response body:', error.response.body);
+    if (req.file) {
+      // After processing the file, delete it from the server
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error('Error while deleting the file:', err);
+          res.status(500).send('Error while deleting the file');
+        } else {
+          console.log('File deleted successfully');
+          res.status(200).send('File processed and deleted');
+        }
+      });
+    } else {
+      // If no file was uploaded, just send a success response
+      res.status(200).send('Email processed successfully');
     }
-    res.status(500).send(`Error forwarding email: ${error.message}`);
+  } catch (error) {
+    console.error('Error processing the file:', error);
+    res.status(500).send('Error processing the file');
+
+    // If an error occurred and the file was uploaded, delete it
+    if (req.file) {
+      fs.unlink(req.file.path, (err) => {
+        if (err) {
+          console.error('Error while deleting the file:', err);
+        } else {
+          console.log('File deleted after error');
+        }
+      });
+    }
   }
 });
 
