@@ -1,12 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
+const { simpleParser } = require('mailparser');
 const sgMail = require('@sendgrid/mail');
 
 const app = express();
 const port = process.env.PORT || 3000;
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+
+const rawPayloadStorage = multer.memoryStorage();
+const rawPayloadUpload = multer({ storage: rawPayloadStorage }).single('email');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
@@ -43,68 +45,33 @@ function processDataUriImages(html) {
   return updatedHtml;
 }
 
-app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
+app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
   // console.log('req.body', req.body);
 
   try {
-    const {
-      from,
-      subject,
-      text,
-      html,
-      'attachment-info': attachmentInfo,
-    } = req.body;
+    if (!req.file) {
+      return res.status(400).send('Missing raw email payload');
+    }
+
+    const rawEmail = req.file.buffer.toString('utf-8');
+    const parsedEmail = await simpleParser(rawEmail);
+
+    const { from, subject, text, html, attachments } = parsedEmail;
 
     if (!from) {
       return res.status(400).send('Missing required field: from');
     }
 
-    const parsedSubject = from + ': ' + (subject || '(No Subject)');
+    const parsedSubject =
+      from.value[0].address + ': ' + (subject || '(No Subject)');
     const parsedText = text || '';
     const parsedHtml = html || '';
 
-    // Parse the attachment-info JSON string
-    let parsedAttachmentInfo = {};
-
-    try {
-      parsedAttachmentInfo = attachmentInfo ? JSON.parse(attachmentInfo) : {};
-    } catch (error) {
-      console.error('Error parsing attachmentInfo:', error);
-      console.error('attachmentInfo:', attachmentInfo);
-      return res.status(400).send('Invalid attachmentInfo format');
-    }
-
-    // Create an array of attachments with the required format
-    const attachments = req.files.map((file, index) => {
-      const contentId = `attachment${index}`;
-      const isImage = file.mimetype.startsWith('image/');
-      const htmlTag = isImage
-        ? `<img src="cid:${contentId}" alt="Embedded image ${index + 1}" />`
-        : '';
-
-      const attachmentObject = {
-        content: file.buffer.toString('base64'),
-        filename: file.originalname,
-        type: file.mimetype,
-        disposition: isImage ? 'inline' : 'attachment',
-        cid: contentId,
-        alt: isImage ? `Embedded image ${index + 1}` : undefined,
-        htmlTag: htmlTag,
-      };
-
-      if (isImage) {
-        attachmentObject.content_id = contentId;
-      }
-
-      return attachmentObject;
-    });
-
-    updatedHtml = processDataUriImages(parsedHtml, attachments);
-
+    const updatedHtml = processDataUriImages(parsedHtml);
     const msg = {
       to: process.env.TO_EMAIL,
       from: process.env.FROM_EMAIL,
-      replyTo: from,
+      replyTo: from.value[0].address,
       subject: parsedSubject,
       text: parsedText,
       html: updatedHtml,
