@@ -8,14 +8,17 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const rawPayloadStorage = multer.memoryStorage();
-const rawPayloadUpload = multer({ storage: rawPayloadStorage }).single('email');
+const rawPayloadUpload = multer({
+  storage: rawPayloadStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // Set the size limit to 50 MB
+}).single('email');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Extract and process data URI images
 function processDataUriImages(html) {
   const dataUriRegex =
-    /<img[^>]*src="data:image\/(jpeg|jpg|png|gif|bmp|webp|tif|tiff|svg);base64,([^"]*)"[^>]*>/gi;
+    /<img[^>]*src="data:image\/(jpeg|jpg|png|gif|bmp|webp|tif|tiff|svg|ico|avif|heic|heif);base64,([^"]*)"[^>]*>/gi;
   let updatedHtml = html;
   let match;
 
