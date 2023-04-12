@@ -10,7 +10,7 @@ const port = process.env.PORT || 3000;
 const rawPayloadStorage = multer.memoryStorage();
 const rawPayloadUpload = multer({
   storage: rawPayloadStorage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // Set the size limit to 50 MB
+  limits: { fieldSize: 50 * 1024 * 1024 }, // Set the size limit to 50 MB
 }).single('email');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
