@@ -10,6 +10,39 @@ const upload = multer({ storage: storage });
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+// Extract and process data URI images
+function processDataUriImages(html) {
+  const dataUriRegex =
+    /<img[^>]*src="data:image\/(jpeg|jpg|png|gif|bmp|webp|tif|tiff|svg);base64,([^"]*)"[^>]*>/gi;
+  let updatedHtml = html;
+  let match;
+
+  while ((match = dataUriRegex.exec(html)) !== null) {
+    const mimeType = `image/${match[1].toLowerCase()}`;
+    const dataUri = match[0];
+    const base64Data = match[2];
+    const contentId = `datauri${dataUriRegex.lastIndex}`;
+
+    const attachmentObject = {
+      content: base64Data,
+      filename: `${contentId}.${match[1].toLowerCase()}`,
+      type: mimeType,
+      disposition: 'inline',
+      cid: contentId,
+    };
+
+    attachments.push(attachmentObject);
+
+    const imgTagWithCid = dataUri.replace(
+      /src="[^"]*"/,
+      `src="cid:${contentId}"`
+    );
+    updatedHtml = updatedHtml.replace(dataUri, imgTagWithCid);
+  }
+
+  return updatedHtml;
+}
+
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   // console.log('req.body', req.body);
 
@@ -66,13 +99,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       return attachmentObject;
     });
 
-    let updatedHtml = parsedHtml;
-    attachments.forEach((attachment) => {
-      if (attachment.htmlTag) {
-        const cidRegex = new RegExp(`cid:${attachment.cid}`, 'gi');
-        updatedHtml = updatedHtml.replace(cidRegex, attachment.htmlTag);
-      }
-    });
+    updatedHtml = processDataUriImages(parsedHtml, attachments);
 
     const msg = {
       to: process.env.TO_EMAIL,
