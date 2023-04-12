@@ -68,7 +68,7 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
     const parsedSubject =
       from.value[0].address + ': ' + (subject || '(No Subject)');
     const parsedText = text || '';
-    const parsedHtml = html || '';
+    const parsedHtml = html ? processDataUriImages(html, attachments) : '';
 
     const updatedHtml = processDataUriImages(parsedHtml, attachments);
     const msg = {
