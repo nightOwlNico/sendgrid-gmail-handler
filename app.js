@@ -61,7 +61,7 @@ function processDataUriImages(html, attachments) {
 }
 
 app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
-  // console.log('req.body', req.body);
+  console.log('req.body', req.body);
 
   try {
     let rawEmail, parsedEmail;
@@ -102,7 +102,7 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
-    // console.log('Sending message:', msg);
+    console.log('Sending message:', msg);
 
     await sgMail.send(msg);
 
