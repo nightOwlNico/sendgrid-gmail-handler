@@ -19,7 +19,10 @@ const rawPayloadStorage = multer.diskStorage({
 
 const rawPayloadUpload = multer({
   storage: rawPayloadStorage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // Set the size limit to 50 MB
+  limits: {
+    fileSize: 50 * 1024 * 1024, // Set the size limit for individual files to 50 MB
+    fieldSize: 1 * 1024 * 1024, // Set the size limit for non-file fields combined to 1 MB
+  },
 }).single('email');
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
