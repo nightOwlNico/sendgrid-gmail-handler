@@ -61,8 +61,20 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
   // console.log('req.body', req.body);
 
   try {
-    const rawEmail = fs.readFileSync(req.file.path, 'utf-8');
-    const parsedEmail = await simpleParser(rawEmail);
+    let rawEmail, parsedEmail;
+
+    if (req.file) {
+      rawEmail = fs.readFileSync(req.file.path, 'utf-8');
+      parsedEmail = await simpleParser(rawEmail);
+    } else {
+      parsedEmail = {
+        from: req.body.from,
+        subject: req.body.subject,
+        text: req.body.text,
+        html: req.body.html,
+        attachments: [],
+      };
+    }
 
     const { from, subject, text, html, attachments } = parsedEmail;
 
@@ -75,20 +87,20 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
     const parsedText = text || '';
     const parsedHtml = html ? processDataUriImages(html, attachments) : '';
 
-    const updatedHtml = processDataUriImages(parsedHtml, attachments);
     const msg = {
       to: process.env.TO_EMAIL,
       from: process.env.FROM_EMAIL,
       replyTo: from.value[0].address,
       subject: parsedSubject,
       text: parsedText,
-      html: updatedHtml,
+      html: parsedHtml,
       attachments: attachments.length > 0 ? attachments : undefined,
     };
 
     // console.log('Sending message:', msg);
 
     await sgMail.send(msg);
+
     if (req.file) {
       // After processing the file, delete it from the server
       fs.unlink(req.file.path, (err) => {
