@@ -97,10 +97,12 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
 
     const parsedSubject =
       from.value[0].address + ': ' + (subject || '(No Subject)');
-    const parsedText = text || 'No text content included.';
-    const parsedHtml = html
+    const hasTextContent = text && text.trim().length > 0;
+    const hasHtmlContent = html && html.trim().length > 0;
+    const parsedText = hasTextContent ? text : 'No text content available.';
+    const parsedHtml = hasHtmlContent
       ? processDataUriImages(html, attachments)
-      : parsedText || 'No content included.';
+      : parsedText;
 
     const msg = {
       to: process.env.TO_EMAIL,
