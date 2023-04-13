@@ -8,8 +8,6 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-const fs = require('fs');
-
 // Make sure the uploads directory exists
 if (!fs.existsSync('./uploads')) {
   fs.mkdirSync('./uploads');
