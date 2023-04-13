@@ -65,10 +65,12 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
 
     if (req.file) {
       rawEmail = fs.readFileSync(req.file.path, 'utf-8');
+      console.log('Raw email:', rawEmail);
       parsedEmail = await simpleParser(rawEmail);
+      console.log('Parsed email:', parsedEmail);
     } else {
       parsedEmail = {
-        from: req.body.from,
+        from: { value: [{ address: req.body.from, name: '' }] },
         subject: req.body.subject,
         text: req.body.text,
         html: req.body.html,
