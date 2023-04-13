@@ -1,3 +1,12 @@
+const path = require('path');
+const fs = require('fs');
+const uploadsDir = path.join(__dirname, 'uploads');
+
+// Make sure the uploads directory exists
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
+
 require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
@@ -7,11 +16,6 @@ const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
-
-// Make sure the uploads directory exists
-if (!fs.existsSync('./uploads')) {
-  fs.mkdirSync('./uploads');
-}
 
 const rawPayloadStorage = multer.diskStorage({
   destination: function (req, file, cb) {
