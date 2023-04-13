@@ -12,7 +12,6 @@ const express = require('express');
 const multer = require('multer');
 const { simpleParser } = require('mailparser');
 const sgMail = require('@sendgrid/mail');
-const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
