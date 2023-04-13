@@ -8,12 +8,20 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
+const fs = require('fs');
+
+// Make sure the uploads directory exists
+if (!fs.existsSync('./uploads')) {
+  fs.mkdirSync('./uploads');
+}
+
 const rawPayloadStorage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, './uploads/');
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname);
+    const timestamp = Date.now();
+    cb(null, `${timestamp}-${file.originalname}`);
   },
 });
 
@@ -83,14 +91,18 @@ app.post('/sendgrid-webhook', rawPayloadUpload, async (req, res) => {
 
     const { from, subject, text, html, attachments } = parsedEmail;
 
-    if (!from) {
-      return res.status(400).send('Missing required field: from');
+    if (!from || !from.value || !from.value[0] || !from.value[0].address) {
+      return res
+        .status(400)
+        .send('Missing or improperly formatted required field: from');
     }
 
     const parsedSubject =
       from.value[0].address + ': ' + (subject || '(No Subject)');
-    const parsedText = text || '';
-    const parsedHtml = html ? processDataUriImages(html, attachments) : '';
+    const parsedText = text || 'No text content available.';
+    const parsedHtml = html
+      ? processDataUriImages(html, attachments)
+      : 'No HTML content available.';
 
     const msg = {
       to: process.env.TO_EMAIL,
