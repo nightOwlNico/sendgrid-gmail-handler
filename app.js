@@ -44,8 +44,9 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     attachments: attachments,
   };
 
-    // console.log('Sending message:', msg);
-    
+  // console.log('Sending message:', msg);
+
+  try {
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
   } catch (error) {
@@ -56,6 +57,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     res.status(500).send('Error forwarding email');
   }
 });
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
