@@ -23,6 +23,9 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   const textContent = emailData.text;
   const htmlContent = emailData.html;
 
+  console.log('Text content:', textContent);
+  console.log('HTML content:', htmlContent);
+
   // Process attachments
   const attachments = req.files.map((file) => {
     return {
