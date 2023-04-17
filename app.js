@@ -46,15 +46,13 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       to: process.env.TO_EMAIL,
       from: process.env.FROM_EMAIL,
       replyTo: from,
-      subject: subject
-        ? `${from.address}: ${subject}`
-        : `${from.address}: (No Subject)`,
+      subject: subject ? `${from}: ${subject}` : `${from}: (No Subject)`,
       text: text
-        ? `Original sender: ${from.address}\n\n${text}`
-        : `Original sender: ${from.address}\n\nNo text content provided.`,
+        ? `Original sender: ${from}\n\n${text}`
+        : `Original sender: ${from}\n\nNo text content provided.`,
       html: html
-        ? `Original sender: ${from.address}<br/><br/>${html}`
-        : `Original sender: ${from.address}<br/><br/>No HTML content provided.`,
+        ? `Original sender: ${from}<br/><br/>${html}`
+        : `Original sender: ${from}<br/><br/>No HTML content provided.`,
       attachments: attachments,
     };
 
