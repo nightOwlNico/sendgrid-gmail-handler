@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const sgMail = require('@sendgrid/mail');
+const { simpleParser } = require('mailparser');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -11,42 +12,18 @@ const upload = multer({ storage: storage });
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
-  console.log('req', req);
-  console.log('res', res);
+  const rawEmail = req.body.raw; // Assuming the raw payload is sent in the 'raw' field
+  const parsedEmail = await simpleParser(rawEmail);
 
-  // if (!req.body.from) {
-  //   return res.status(400).send('Missing required field: from');
-  // }
+  // Update the 'To' field in the header
+  parsedEmail.to.value = [{ address: 'new_recipient@example.com', name: '' }];
 
-  // const emailData = req.body;
-  // const fromEmail = emailData.from;
-  // const subject = emailData.subject;
-  // const textContent = emailData.text;
-  // const htmlContent = emailData.html;
-
-  // console.log('Text content:', textContent);
-  // console.log('HTML content:', htmlContent);
-
-  // // Process attachments
-  // const attachments = req.files.map((file) => {
-  //   return {
-  //     content: file.buffer.toString('base64'),
-  //     filename: file.originalname,
-  //     type: file.mimetype,
-  //     disposition: 'attachment',
-  //   };
-  // });
-
-  // // Create and send email using SendGrid
-  // const msg = {
-  //   to: process.env.TO_EMAIL,
-  //   from: process.env.FROM_EMAIL,
-  //   replyTo: fromEmail,
-  //   subject: subject,
-  //   text: textContent,
-  //   html: htmlContent,
-  //   attachments: attachments,
-  // };
+  // Reconstruct the MIME message
+  const rawPayload = parsedEmail.build();
+  // Forward modified email using SendGrid
+  const msg = {
+    raw: rawPayload.toString('base64'), // Convert the Buffer to a base64 string
+  };
 
   // console.log('Sending message:', msg);
 
