@@ -1,7 +1,7 @@
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const sgMail = require('@sendgrid/mail');
-const { simpleParser } = require('mailparser');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,22 +12,50 @@ const upload = multer({ storage: storage });
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
-  const rawEmail = req.body.raw; // Assuming the raw payload is sent in the 'raw' field
-  const parsedEmail = await simpleParser(rawEmail);
-
-  // Update the 'To' field in the header
-  parsedEmail.to.value = [{ address: 'new_recipient@example.com', name: '' }];
-
-  // Reconstruct the MIME message
-  const rawPayload = parsedEmail.build();
-  // Forward modified email using SendGrid
-  const msg = {
-    raw: rawPayload.toString('base64'), // Convert the Buffer to a base64 string
-  };
-
-  // console.log('Sending message:', msg);
+  // console.log('req.body', req.body);
 
   try {
+    const {
+      from,
+      subject,
+      text,
+      html,
+      'attachment-info': attachmentInfo,
+    } = req.body;
+    if (!from) {
+      return res.status(400).send('Missing required field: from');
+    }
+
+    // Parse the attachment-info JSON string
+    const parsedAttachmentInfo = JSON.parse(attachmentInfo);
+
+    // Create an array of attachments with the required format
+    const attachments = req.files.map((file) => ({
+      content: file.buffer.toString('base64'),
+      filename: file.originalname,
+      type: file.mimetype,
+      disposition: 'attachment',
+      contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
+    }));
+
+    const msg = {
+      to: process.env.TO_EMAIL,
+      from: process.env.FROM_EMAIL,
+      replyTo: from,
+      subject: subject
+        ? `${from.address}: ${subject}`
+        : `${from.address}: (No Subject)`,
+      text: text
+        ? `Original sender: ${from.address}\n\n${text}`
+        : `Original sender: ${from.address}\n\nNo text content provided.`,
+      html: html
+        ? `Original sender: ${from.address}<br/><br/>${html}`
+        : `Original sender: ${from.address}<br/><br/>No HTML content provided.`,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    };
+
+    // console.log('Sending message:', msg);
+
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
   } catch (error) {
