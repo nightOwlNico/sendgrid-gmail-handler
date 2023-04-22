@@ -48,6 +48,19 @@ function isHtmlEmpty(html) {
   return !hasElements && textContent === '';
 }
 
+function calculateTotalEmailSize(text, html, files) {
+  const textBuffer = text ? Buffer.from(text) : Buffer.alloc(0);
+  const htmlBuffer = html ? Buffer.from(html) : Buffer.alloc(0);
+
+  let attachmentsSize = 0;
+
+  if (files && files.length > 0) {
+    attachmentsSize = files.reduce((acc, file) => acc + file.size, 0);
+  }
+
+  return textBuffer.length + htmlBuffer.length + attachmentsSize;
+}
+
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   console.log('req.body', req.body);
 
@@ -76,6 +89,27 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
 
     if (html && !isHtmlEmpty(html)) {
       msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
+    }
+
+    const totalEmailSize = calculateTotalEmailSize(text, html, req.files);
+
+    if (totalEmailSize > 30 * 1024 * 1024) {
+      const errorMsg = new Mail();
+      errorMsg.setFrom(process.env.FROM_EMAIL);
+      errorMsg.addTo(process.env.TO_EMAIL);
+      errorMsg.setSubject(
+        `[EMAIL TOO LARGE] Email from ${from} could not be forwarded`
+      );
+      errorMsg.addTextContent(
+        `WARNING: The email from ${from} exceeded the 30 MB size limit and could not be forwarded.`
+      );
+      errorMsg.addHtmlContent(
+        `<p style="font-size: 24px; font-weight: bold; color: red;">WARNING: Email too large</p><p>The email from ${from} exceeded the 30 MB size limit and could not be forwarded.</p>`
+      );
+
+      await sgMail.send(errorMsg);
+      res.status(200).send('Failure notice sent');
+      return;
     }
 
     if (req.files && req.files.length > 0) {
