@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const sgMail = require('@sendgrid/mail');
+const cheerio = require('cheerio');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,6 +11,41 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+function isHtmlEmpty(html) {
+  const $ = cheerio.load(html);
+
+  const textContent = $.text().trim();
+  const elementsToCheck = [
+    'img',
+    'a',
+    'ul',
+    'ol',
+    'table',
+    'form',
+    'video',
+    'audio',
+    'iframe',
+    'style',
+    'script',
+    'pre',
+    'blockquote',
+    'canvas',
+    'svg',
+    'object',
+  ];
+
+  let hasElements = false;
+
+  for (const tagName of elementsToCheck) {
+    if ($(tagName).length > 0) {
+      hasElements = true;
+      break;
+    }
+  }
+
+  return !hasElements && textContent === '';
+}
 
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   console.log('req.body', req.body);
@@ -57,7 +93,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     }
 
     // Add the HTML field only if there is HTML content available
-    if (html) {
+    if (html && !isHtmlEmpty(html)) {
       msg.html = `Original message from ${from}:<br/><br/>${html}`;
     }
 
