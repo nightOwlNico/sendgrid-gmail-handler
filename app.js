@@ -50,11 +50,13 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       text: text
         ? `Original sender: ${from}\n\n${text}`
         : `Original sender: ${from}\n\nNo text content provided.`,
-      html: html
-        ? `Original sender: ${from}<br/><br/>${html}`
-        : `Original sender: ${from}<br/><br/>No HTML content provided.`,
       attachments: attachments,
     };
+
+    // Add the HTML field only if there is HTML content available
+    if (html) {
+      msg.html = `Original sender: ${from}<br/><br/>${updatedHtml}`;
+    }
 
     // console.log('Sending message:', msg);
 
