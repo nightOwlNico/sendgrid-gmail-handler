@@ -122,7 +122,32 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     }
 
     if (req.files && req.files.length > 0) {
-      const parsedAttachmentInfo = JSON.parse(attachmentInfo);
+      let parsedAttachmentInfo;
+
+      try {
+        parsedAttachmentInfo = JSON.parse(attachmentInfo);
+      } catch (error) {
+        console.warn(
+          'Malformed attachment-info encountered, continuing without attachments.'
+        );
+        parsedAttachmentInfo = {};
+
+        const warningText =
+          'WARNING: The attachment data was malformed, and none of the sent attachments could be included.';
+        const warningHtml = `<p style="font-size: 18px; font-weight: bold; color: red;">${warningText}</p>`;
+
+        if (msg.text) {
+          msg.text += `\n\n${warningText}`;
+        } else {
+          msg.addTextContent(warningText);
+        }
+
+        if (msg.html) {
+          msg.html += `<br/><br/>${warningHtml}`;
+        } else {
+          msg.addHtmlContent(warningHtml);
+        }
+      }
 
       req.files.forEach((file) => {
         const contentId = parsedAttachmentInfo[file.fieldname]['content-id'];
