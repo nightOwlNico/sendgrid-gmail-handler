@@ -47,13 +47,12 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       from: process.env.FROM_EMAIL,
       replyTo: from,
       subject: subject ? `${from}: ${subject}` : `${from}: (No Subject)`,
-      text: `No message provided from ${from}.`,
+      text: `No email body provided from ${from}.`,
       attachments: attachments,
     };
 
     // Overwrite the text field only if there is text content available
-    // TODO: Need to check if text === '' also??????
-    if (text) {
+    if (text && text.trim() !== '') {
       msg.text = `Original message from ${from}:\n\n${text}`;
     }
 
