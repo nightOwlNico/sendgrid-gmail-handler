@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const sgMail = require('@sendgrid/mail');
+const { Mail } = require('@sendgrid/helpers/classes');
 const cheerio = require('cheerio');
 
 const app = express();
@@ -58,46 +59,49 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       html,
       'attachment-info': attachmentInfo,
     } = req.body;
-    let attachments = [];
 
     if (!from) {
       return res.status(400).send('Missing required field: from');
     }
 
+    const msg = new Mail();
+    msg.setFrom(process.env.FROM_EMAIL);
+    msg.setReplyTo(from);
+    msg.addTo(process.env.TO_EMAIL);
+    msg.setSubject(subject ? `${from}: ${subject}` : `${from}: (No Subject)`);
+
+    if (text && text.trim() !== '') {
+      msg.addTextContent(`Original message from ${from}:\n\n${text}`);
+    }
+
+    if (html && !isHtmlEmpty(html)) {
+      msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
+    }
+
     if (req.files && req.files.length > 0) {
-      // Parse the attachment-info JSON string
       const parsedAttachmentInfo = JSON.parse(attachmentInfo);
 
-      // Create an array of attachments with the required format
-      attachments = req.files.map((file) => ({
-        content: file.buffer.toString('base64'),
-        filename: file.originalname,
-        type: file.mimetype,
-        disposition: 'attachment',
-        contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
-      }));
+      req.files.forEach((file) => {
+        const contentId = parsedAttachmentInfo[file.fieldname]['content-id'];
+        const attachment = {
+          content: file.buffer.toString('base64'),
+          filename: file.originalname,
+          type: file.mimetype,
+          content_id: contentId,
+        };
+
+        // Set the disposition to inline if the contentId is used in the HTML content
+        if (html && html.includes(`cid:${contentId}`)) {
+          attachment.disposition = 'inline';
+        } else {
+          attachment.disposition = 'attachment';
+        }
+
+        msg.addAttachment(attachment);
+      });
     }
 
-    const msg = {
-      to: process.env.TO_EMAIL,
-      from: process.env.FROM_EMAIL,
-      replyTo: from,
-      subject: subject ? `${from}: ${subject}` : `${from}: (No Subject)`,
-      text: `No email body provided from ${from}.`,
-      attachments: attachments,
-    };
-
-    // Overwrite the text field only if there is text content available
-    if (text && text.trim() !== '') {
-      msg.text = `Original message from ${from}:\n\n${text}`;
-    }
-
-    // Add the HTML field only if there is HTML content available
-    if (html && !isHtmlEmpty(html)) {
-      msg.html = `Original message from ${from}:<br/><br/>${html}`;
-    }
-
-    console.log('Sending message:', msg);
+    console.log('Sending message:', msg.toJSON());
 
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
