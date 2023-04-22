@@ -12,7 +12,7 @@ const upload = multer({ storage: storage });
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
-  // console.log('req.body', req.body);
+  console.log('req.body', req.body);
 
   try {
     const {
@@ -23,7 +23,6 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       'attachment-info': attachmentInfo,
     } = req.body;
     let attachments = [];
-    let updatedHtml = html;
 
     if (!from) {
       return res.status(400).send('Missing required field: from');
@@ -34,21 +33,13 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       const parsedAttachmentInfo = JSON.parse(attachmentInfo);
 
       // Create an array of attachments with the required format
-      attachments = req.files.map((file) => {
-        const contentId = parsedAttachmentInfo[file.fieldname]['content-id'];
-
-        // Update the HTML content with the correct Content-ID
-        const regex = new RegExp(`cid:${file.fieldname}`, 'g');
-        updatedHtml = updatedHtml.replace(regex, `cid:${contentId}`);
-
-        return {
-          content: file.buffer.toString('base64'),
-          filename: file.originalname,
-          type: file.mimetype,
-          disposition: 'attachment',
-          contentId: contentId,
-        };
-      });
+      attachments = req.files.map((file) => ({
+        content: file.buffer.toString('base64'),
+        filename: file.originalname,
+        type: file.mimetype,
+        disposition: 'attachment',
+        contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
+      }));
     }
 
     const msg = {
@@ -56,18 +47,22 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       from: process.env.FROM_EMAIL,
       replyTo: from,
       subject: subject ? `${from}: ${subject}` : `${from}: (No Subject)`,
-      text: text
-        ? `Original sender: ${from}\n\n${text}`
-        : `Original sender: ${from}\n\nNo text content provided.`,
+      text: `No message provided from ${from}.`,
       attachments: attachments,
     };
 
-    // Add the HTML field only if there is HTML content available
-    if (html) {
-      msg.html = `Original sender: ${from}<br/><br/>${updatedHtml}`;
+    // Overwrite the text field only if there is text content available
+    // TODO: Need to check if text === '' also??????
+    if (text) {
+      msg.text = `Original message from ${from}:\n\n${text}`;
     }
 
-    // console.log('Sending message:', msg);
+    // Add the HTML field only if there is HTML content available
+    if (html) {
+      msg.html = `Original message from ${from}:<br/><br/>${html}`;
+    }
+
+    console.log('Sending message:', msg);
 
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
