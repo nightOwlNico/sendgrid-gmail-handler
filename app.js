@@ -23,6 +23,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       'attachment-info': attachmentInfo,
     } = req.body;
     let attachments = [];
+    let updatedHtml = html;
 
     if (!from) {
       return res.status(400).send('Missing required field: from');
@@ -33,13 +34,21 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       const parsedAttachmentInfo = JSON.parse(attachmentInfo);
 
       // Create an array of attachments with the required format
-      attachments = req.files.map((file) => ({
-        content: file.buffer.toString('base64'),
-        filename: file.originalname,
-        type: file.mimetype,
-        disposition: 'attachment',
-        contentId: parsedAttachmentInfo[file.fieldname]['content-id'],
-      }));
+      attachments = req.files.map((file) => {
+        const contentId = parsedAttachmentInfo[file.fieldname]['content-id'];
+
+        // Update the HTML content with the correct Content-ID
+        const regex = new RegExp(`cid:${file.fieldname}`, 'g');
+        updatedHtml = updatedHtml.replace(regex, `cid:${contentId}`);
+
+        return {
+          content: file.buffer.toString('base64'),
+          filename: file.originalname,
+          type: file.mimetype,
+          disposition: 'attachment',
+          contentId: contentId,
+        };
+      });
     }
 
     const msg = {
