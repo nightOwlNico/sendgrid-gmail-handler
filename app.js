@@ -4,6 +4,7 @@ const multer = require('multer');
 const sgMail = require('@sendgrid/mail');
 const { Mail } = require('@sendgrid/helpers/classes');
 const cheerio = require('cheerio');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -59,6 +60,14 @@ function calculateTotalEmailSize(text, html, files) {
   }
 
   return textBuffer.length + htmlBuffer.length + attachmentsSize;
+}
+
+function hasUnsafeFileTypes(files) {
+  const unsafeExtensions = ['.exe', '.bat', '.js', '.sh', '.dll', '.jar'];
+  return files.some((file) => {
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+    return unsafeExtensions.includes(fileExtension);
+  });
 }
 
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
@@ -133,6 +142,24 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
 
         msg.addAttachment(attachment);
       });
+    }
+
+    if (hasUnsafeFileTypes(req.files)) {
+      const warningText =
+        'WARNING: This email contains potentially unsafe file types.';
+      const warningHtml = `<p style="font-size: 18px; font-weight: bold; color: red;">${warningText}</p>`;
+
+      if (msg.text) {
+        msg.text += `\n\n${warningText}`;
+      } else {
+        msg.addTextContent(warningText);
+      }
+
+      if (msg.html) {
+        msg.html += `<br/><br/>${warningHtml}`;
+      } else {
+        msg.addHtmlContent(warningHtml);
+      }
     }
 
     console.log('Sending message:', msg.toJSON());
