@@ -6,20 +6,6 @@ const { Mail } = require('@sendgrid/helpers/classes');
 const cheerio = require('cheerio');
 const path = require('path');
 
-function checkRequiredEnvironmentVariables() {
-  const requiredVars = ['SENDGRID_API_KEY', 'FROM_EMAIL', 'TO_EMAIL'];
-
-  for (const variable of requiredVars) {
-    if (!process.env[variable]) {
-      throw new Error(
-        `Missing required environment variable: ${variable}. Please set it in your .env file or environment.`
-      );
-    }
-  }
-}
-
-checkRequiredEnvironmentVariables();
-
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -140,35 +126,10 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
 
     if (text && text.trim() !== '') {
       msg.addTextContent(`Original message from ${from}:\n\n${text}`);
-    } else {
-      msg.addTextContent(`Original message from ${from} had no text content.`);
     }
 
     if (html && !isHtmlContentEmpty(html)) {
       msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
-    } else {
-      msg.addHtmlContent(
-        `Original message from ${from} had no HTML content.<br/><br/>Text content:<br/><pre>${
-          text || ''
-        }</pre>`
-      );
-    }
-
-    if ((!text || text.trim() === '') && isHtmlContentEmpty(html)) {
-      const noContentText = `Original message from ${from} had no content.`;
-      const noContentHtml = `<p>Original message from ${from} had no content.</p>`;
-
-      if (msg.text) {
-        msg.addTextContent(`\n\n${noContentText}`);
-      } else {
-        msg.addTextContent(noContentText);
-      }
-
-      if (msg.html) {
-        msg.addHtmlContent(`<br/><br/>${noContentHtml}`);
-      } else {
-        msg.addHtmlContent(noContentHtml);
-      }
     }
 
     if (isEmailEncrypted(text, html)) {
