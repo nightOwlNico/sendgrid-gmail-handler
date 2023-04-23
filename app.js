@@ -1,4 +1,4 @@
-import Mail from '@sendgrid/helpers/classes/mail';
+import Mail from '@sendgrid/helpers/classes/mail.js';
 import sgMail from '@sendgrid/mail';
 import cheerio from 'cheerio';
 import dotenv from 'dotenv';
