@@ -132,28 +132,6 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
     }
 
-    const totalEmailSize = calculateEmailMessageSize(msg);
-
-    // Check if the total email size exceeds SendGrid's 30 MB size limit for the v3 API
-    if (totalEmailSize > 30 * 1024 * 1024) {
-      const errorMsg = new Mail();
-      errorMsg.setFrom(process.env.FROM_EMAIL);
-      errorMsg.addTo(process.env.TO_EMAIL);
-      errorMsg.setSubject(
-        `[EMAIL TOO LARGE] Email from ${from} could not be forwarded`
-      );
-      errorMsg.addTextContent(
-        `WARNING: The email from ${from} exceeded the 30 MB size limit and could not be forwarded.`
-      );
-      errorMsg.addHtmlContent(
-        `<p style="font-size: 24px; font-weight: bold; color: red;">WARNING: Email too large</p><p>The email from ${from} exceeded the 30 MB size limit and could not be forwarded.</p>`
-      );
-
-      await sgMail.send(errorMsg);
-      res.status(200).send('Failure notice sent');
-      return;
-    }
-
     if (isEmailEncrypted(text, html)) {
       const errorMsg = new Mail();
       errorMsg.setFrom(process.env.FROM_EMAIL);
@@ -239,6 +217,28 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       }
     }
 
+    // Check if the total email size exceeds SendGrid's 30 MB size limit for the v3 API
+    const totalEmailSize = calculateEmailMessageSize(msg);
+
+    if (totalEmailSize > 30 * 1024 * 1024) {
+      const errorMsg = new Mail();
+      errorMsg.setFrom(process.env.FROM_EMAIL);
+      errorMsg.addTo(process.env.TO_EMAIL);
+      errorMsg.setSubject(
+        `[EMAIL TOO LARGE] Email from ${from} could not be forwarded`
+      );
+      errorMsg.addTextContent(
+        `WARNING: The email from ${from} exceeded the 30 MB size limit and could not be forwarded.`
+      );
+      errorMsg.addHtmlContent(
+        `<p style="font-size: 24px; font-weight: bold; color: red;">WARNING: Email too large</p><p>The email from ${from} exceeded the 30 MB size limit and could not be forwarded.</p>`
+      );
+
+      await sgMail.send(errorMsg);
+      res.status(200).send('Failure notice sent');
+      return;
+    }
+
     // console.log('Sending message:', msg.toJSON());
 
     await sgMail.send(msg);
@@ -248,7 +248,16 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     if (error.response && error.response.body) {
       console.error('Error response body:', error.response.body);
     }
-    res.status(500).send('Error forwarding email');
+
+    let errorMessage = 'Error forwarding email';
+
+    if (error.code === 'SomeErrorCode') {
+      errorMessage = 'A more specific error message related to the error code';
+    } else if (error.code === 'AnotherErrorCode') {
+      errorMessage = 'Another specific error message related to the error code';
+    }
+
+    res.status(500).send(errorMessage);
   }
 });
 
