@@ -140,10 +140,25 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
 
     if (text && text.trim() !== '') {
       msg.addTextContent(`Original message from ${from}:\n\n${text}`);
+    } else {
+      msg.addTextContent(`Original message from ${from} had no text content.`);
     }
 
     if (html && !isHtmlContentEmpty(html)) {
       msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
+    } else {
+      msg.addHtmlContent(
+        `Original message from ${from} had no HTML content.<br/><br/>Text content:<br/><pre>${
+          text || ''
+        }</pre>`
+      );
+    }
+
+    if ((!text || text.trim() === '') && isHtmlContentEmpty(html)) {
+      msg.addTextContent(`Original message from ${from} had no content.`);
+      msg.addHtmlContent(
+        `<p>Original message from ${from} had no content.</p>`
+      );
     }
 
     if (isEmailEncrypted(text, html)) {
