@@ -14,7 +14,7 @@ const upload = multer({ storage: storage });
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-function isHtmlEmpty(html) {
+function isHtmlContentEmpty(html) {
   const $ = cheerio.load(html);
 
   const textContent = $.text().trim();
@@ -49,19 +49,6 @@ function isHtmlEmpty(html) {
   return !hasElements && textContent === '';
 }
 
-function calculateTotalEmailSize(text, html, files) {
-  const textBuffer = text ? Buffer.from(text) : Buffer.alloc(0);
-  const htmlBuffer = html ? Buffer.from(html) : Buffer.alloc(0);
-
-  let attachmentsSize = 0;
-
-  if (files && files.length > 0) {
-    attachmentsSize = files.reduce((acc, file) => acc + file.size, 0);
-  }
-
-  return textBuffer.length + htmlBuffer.length + attachmentsSize;
-}
-
 function hasUnsafeFileTypes(files) {
   const unsafeExtensions = ['.exe', '.bat', '.js', '.sh', '.dll', '.jar'];
   return files.some((file) => {
@@ -92,8 +79,31 @@ function isEmailEncrypted(text, html) {
   return encryptedKeywords.some((keyword) => contentToCheck.includes(keyword));
 }
 
+function calculateEmailMessageSize(msg) {
+  const jsonMsg = msg.toJSON();
+  let size = 0;
+
+  // Calculate the size of text and html content
+  if (jsonMsg.content) {
+    jsonMsg.content.forEach((content) => {
+      const contentBuffer = Buffer.from(content.value, 'utf-8');
+      size += contentBuffer.length;
+    });
+  }
+
+  // Calculate the size of attachments
+  if (jsonMsg.attachments) {
+    jsonMsg.attachments.forEach((attachment) => {
+      const attachmentBuffer = Buffer.from(attachment.content, 'base64');
+      size += attachmentBuffer.length;
+    });
+  }
+
+  return size;
+}
+
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
-  console.log('req.body', req.body);
+  // console.log('req.body', req.body);
 
   try {
     const {
@@ -118,12 +128,13 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       msg.addTextContent(`Original message from ${from}:\n\n${text}`);
     }
 
-    if (html && !isHtmlEmpty(html)) {
+    if (html && !isHtmlContentEmpty(html)) {
       msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
     }
 
-    const totalEmailSize = calculateTotalEmailSize(text, html, req.files);
+    const totalEmailSize = calculateEmailMessageSize(msg);
 
+    // Check if the total email size exceeds SendGrid's 30 MB size limit for the v3 API
     if (totalEmailSize > 30 * 1024 * 1024) {
       const errorMsg = new Mail();
       errorMsg.setFrom(process.env.FROM_EMAIL);
@@ -228,7 +239,7 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       }
     }
 
-    console.log('Sending message:', msg.toJSON());
+    // console.log('Sending message:', msg.toJSON());
 
     await sgMail.send(msg);
     res.status(200).send('Email forwarded successfully');
