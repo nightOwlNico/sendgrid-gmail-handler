@@ -124,12 +124,19 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     msg.addTo(process.env.TO_EMAIL);
     msg.setSubject(subject ? `${from}: ${subject}` : `${from}: (No Subject)`);
 
-    if (text && text.trim() !== '') {
-      msg.addTextContent(`Original message from ${from}:\n\n${text}`);
-    }
+    if ((!text || text.trim() === '') && isHtmlContentEmpty(html)) {
+      msg.addTextContent(`Original message from ${from} had no content.`);
+      msg.addHtmlContent(
+        `<p>Original message from ${from} had no content.</p>`
+      );
+    } else {
+      if (text && text.trim() !== '') {
+        msg.addTextContent(`Original message from ${from}:\n\n${text}`);
+      }
 
-    if (html && !isHtmlContentEmpty(html)) {
-      msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
+      if (html && !isHtmlContentEmpty(html)) {
+        msg.addHtmlContent(`Original message from ${from}:<br/><br/>${html}`);
+      }
     }
 
     if (isEmailEncrypted(text, html)) {
