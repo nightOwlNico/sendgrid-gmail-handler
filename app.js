@@ -245,19 +245,25 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
     res.status(200).send('Email forwarded successfully');
   } catch (error) {
     console.error('Error:', error);
-    if (error.response && error.response.body) {
-      console.error('Error response body:', error.response.body);
-    }
-
     let errorMessage = 'Error forwarding email';
+    let statusCode = 500;
 
-    if (error.code === 'SomeErrorCode') {
-      errorMessage = 'A more specific error message related to the error code';
-    } else if (error.code === 'AnotherErrorCode') {
-      errorMessage = 'Another specific error message related to the error code';
+    if (error.response) {
+      console.error('Error response body:', error.response.body);
+      statusCode = error.response.status;
+
+      if (
+        error.response.body &&
+        error.response.body.errors &&
+        error.response.body.errors.length > 0
+      ) {
+        errorMessage = error.response.body.errors
+          .map((err) => err.message)
+          .join('; ');
+      }
     }
 
-    res.status(500).send(errorMessage);
+    res.status(statusCode).send(errorMessage);
   }
 });
 
