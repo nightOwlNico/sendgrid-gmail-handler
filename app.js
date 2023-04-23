@@ -6,6 +6,20 @@ const { Mail } = require('@sendgrid/helpers/classes');
 const cheerio = require('cheerio');
 const path = require('path');
 
+function checkRequiredEnvironmentVariables() {
+  const requiredVars = ['SENDGRID_API_KEY', 'FROM_EMAIL', 'TO_EMAIL'];
+
+  for (const variable of requiredVars) {
+    if (!process.env[variable]) {
+      throw new Error(
+        `Missing required environment variable: ${variable}. Please set it in your .env file or environment.`
+      );
+    }
+  }
+}
+
+checkRequiredEnvironmentVariables();
+
 const app = express();
 const port = process.env.PORT || 3000;
 
