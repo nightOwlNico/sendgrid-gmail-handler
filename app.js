@@ -159,13 +159,13 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       const noContentHtml = `<p>Original message from ${from} had no content.</p>`;
 
       if (msg.text) {
-        msg.text += `\n\n${noContentText}`;
+        msg.addTextContent(`\n\n${noContentText}`);
       } else {
         msg.addTextContent(noContentText);
       }
 
       if (msg.html) {
-        msg.html += `<br/><br/>${noContentHtml}`;
+        msg.addHtmlContent(`<br/><br/>${noContentHtml}`);
       } else {
         msg.addHtmlContent(noContentHtml);
       }
