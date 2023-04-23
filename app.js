@@ -70,6 +70,28 @@ function hasUnsafeFileTypes(files) {
   });
 }
 
+function isEmailEncrypted(text, html) {
+  const encryptedKeywords = [
+    // PGP related keywords
+    '-----BEGIN PGP MESSAGE-----',
+    '-----BEGIN PGP SIGNED MESSAGE-----',
+    '-----BEGIN PGP SIGNATURE-----',
+    'application/pgp-encrypted',
+
+    // S/MIME related keywords
+    '-----BEGIN PKCS7-----',
+    '-----END PKCS7-----',
+    'application/pkcs7-mime',
+    'application/x-pkcs7-mime',
+    'smime.p7m',
+    'smime.p7s',
+  ];
+
+  const contentToCheck = text + html;
+
+  return encryptedKeywords.some((keyword) => contentToCheck.includes(keyword));
+}
+
 app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
   console.log('req.body', req.body);
 
@@ -114,6 +136,25 @@ app.post('/sendgrid-webhook', upload.any(), async (req, res) => {
       );
       errorMsg.addHtmlContent(
         `<p style="font-size: 24px; font-weight: bold; color: red;">WARNING: Email too large</p><p>The email from ${from} exceeded the 30 MB size limit and could not be forwarded.</p>`
+      );
+
+      await sgMail.send(errorMsg);
+      res.status(200).send('Failure notice sent');
+      return;
+    }
+
+    if (isEmailEncrypted(text, html)) {
+      const errorMsg = new Mail();
+      errorMsg.setFrom(process.env.FROM_EMAIL);
+      errorMsg.addTo(process.env.TO_EMAIL);
+      errorMsg.setSubject(
+        `[ENCRYPTED EMAIL] Email from ${from} could not be forwarded`
+      );
+      errorMsg.addTextContent(
+        `WARNING: The email from ${from} is encrypted and could not be forwarded.`
+      );
+      errorMsg.addHtmlContent(
+        `<p style="font-size: 24px; font-weight: bold; color: red;">WARNING: Encrypted Email</p><p>The email from ${from} is encrypted and could not be forwarded.</p>`
       );
 
       await sgMail.send(errorMsg);
