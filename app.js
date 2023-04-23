@@ -1,25 +1,10 @@
-import Mail from '@sendgrid/helpers/classes/mail';
-import sgMail from '@sendgrid/mail';
-import cheerio from 'cheerio';
-import dotenv from 'dotenv';
-import express from 'express';
-import multer from 'multer';
-import path from 'path';
-dotenv.config();
-
-function checkRequiredEnvironmentVariables() {
-  const requiredVars = ['SENDGRID_API_KEY', 'FROM_EMAIL', 'TO_EMAIL'];
-
-  for (const variable of requiredVars) {
-    if (!process.env[variable]) {
-      throw new Error(
-        `Missing required environment variable: ${variable}. Please set it in your .env file or environment.`
-      );
-    }
-  }
-}
-
-checkRequiredEnvironmentVariables();
+require('dotenv').config();
+const express = require('express');
+const multer = require('multer');
+const sgMail = require('@sendgrid/mail');
+const { Mail } = require('@sendgrid/helpers/classes');
+const cheerio = require('cheerio');
+const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
